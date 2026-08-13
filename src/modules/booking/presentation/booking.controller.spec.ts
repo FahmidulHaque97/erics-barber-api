@@ -105,10 +105,15 @@ describe('BookingController', () => {
       appointmentDate: new Date('2026-07-01T10:00:00.000Z'),
     };
 
-    const result = await controller.createBooking('customer-id', dto);
+    const result = await controller.createBooking(
+      'customer-id',
+      '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+      dto,
+    );
 
     expect(createBookingUseCase.execute).toHaveBeenCalledWith(
       'customer-id',
+      '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
       dto,
     );
     expect(result).toEqual({

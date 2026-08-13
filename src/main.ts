@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
@@ -7,37 +7,21 @@ import helmet from 'helmet';
 import cookieParser = require('cookie-parser');
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { globalValidationPipeOptions } from './config/validation';
+import { createOpenApiDocument } from './openapi';
 
 async function bootstrap() {
   // Create the NestJS application
   const app = await NestFactory.create(AppModule);
 
   // Swagger Setup
-  const config = new DocumentBuilder()
-    .setTitle("Eric's Barber API")
-    .setDescription('Auth and Booking API for Barber Shop Application')
-    .setContact(
-      'Fahmid Haque',
-      'https://www.linkedin.com/in/fahmid-h-b7a96b123/',
-      'fahmidulhaque97@pm.me',
-    )
-    .setLicense('MIT', 'https://mit-license.org/')
-    .setVersion('1.0')
-    .build();
-  config.servers = [
-    {
-      url: 'https://erics-barber-api.onrender.com',
-      description: 'Base URL for API',
-    },
-  ];
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  const documentFactory = () => createOpenApiDocument(app);
   SwaggerModule.setup('api', app, documentFactory);
 
   // Global Middlewares and Pipes
   const corsOptions: CorsOptions = {
     origin: process.env.CLIENT_BASE_URL,
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
   };
 
   app.use(helmet());

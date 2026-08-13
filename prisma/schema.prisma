@@ -107,28 +107,47 @@ model Session {
 }
 
 model Booking {
-  id                String        @id @default(uuid())
-  userId            String?
-  customerName      String?
-  customerEmail     String?
-  customerPhone     String?
-  serviceId         String?
-  status            BookingStatus @default(CONFIRMED)
-  startTime         DateTime
-  endTime           DateTime
-  cancelledAt       DateTime?
-  cancelledByUserId String?
-  createdAt         DateTime      @default(now())
+  id                             String        @id @default(uuid())
+  userId                         String?
+  customerName                   String?
+  customerEmail                  String?
+  customerPhone                  String?
+  serviceId                      String?
+  serviceNameSnapshot            String?
+  serviceDurationMinutesSnapshot Int?
+  servicePricePenceSnapshot      Int?
+  status                         BookingStatus @default(CONFIRMED)
+  startTime                      DateTime
+  endTime                        DateTime
+  cancelledAt                    DateTime?
+  cancelledByUserId              String?
+  createdAt                      DateTime      @default(now())
 
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  barber          Barber?  @relation(fields: [barberId], references: [id])
-  barberId        String?
-  service         Service? @relation(fields: [serviceId], references: [id])
-  cancelledByUser User?    @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  user                User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  barber              Barber?                     @relation(fields: [barberId], references: [id])
+  barberId            String?
+  service             Service?                    @relation(fields: [serviceId], references: [id])
+  cancelledByUser     User?                       @relation("BookingCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  creationIdempotency BookingCreationIdempotency?
 
   @@index([userId])
   @@index([serviceId])
   @@index([cancelledByUserId])
+}
+
+model BookingCreationIdempotency {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  scope       String
+  requestHash String
+  bookingId   String?  @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 model BarberAvailabilityRule {

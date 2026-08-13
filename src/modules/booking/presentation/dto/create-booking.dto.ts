@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsEmail, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBookingDto {
@@ -8,6 +14,7 @@ export class CreateBookingDto {
     example: 'cmservice123',
   })
   @IsString()
+  @MaxLength(100)
   readonly serviceId!: string;
 
   @ApiProperty({
@@ -15,6 +22,7 @@ export class CreateBookingDto {
     example: 'cmbarber123',
   })
   @IsString()
+  @MaxLength(100)
   readonly barberId!: string;
 
   @ApiProperty({
@@ -35,6 +43,7 @@ export class CreateBookingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   readonly customerName?: string;
 
   @ApiPropertyOptional({
@@ -44,6 +53,7 @@ export class CreateBookingDto {
   })
   @IsOptional()
   @IsEmail()
+  @MaxLength(254)
   readonly customerEmail?: string;
 
   @ApiPropertyOptional({
@@ -53,5 +63,6 @@ export class CreateBookingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   readonly customerPhone?: string;
 }

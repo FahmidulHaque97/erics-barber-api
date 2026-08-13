@@ -2,7 +2,7 @@
 
 ## Description
 
-Eric's Barbers API is a backend service for managing barbershop bookings, user authentication, notifications, and payments. It provides RESTful endpoints for clients to interact with barbers, book appointments, receive notifications, and handle payments securely. The API integrates with external services for email and calendar management.
+Eric's Barbers API is the shared backend and business-rule enforcement boundary for the Next.js web client and React Native mobile client. It manages authentication, users, services, barbers, availability, and booking lifecycles. Transactional email is implemented; push notifications and payments remain future capabilities.
 
 ## Technologies Used
 
@@ -86,9 +86,11 @@ prisma/
 - `openapi/openapi.json` is the canonical committed client contract.
 - Regenerate it deterministically with `npm run openapi:generate`.
 - Verify that the committed document matches the controllers and DTOs with `npm run openapi:check`.
-- When the contract changes, copy the regenerated file to `erics-barbers-ui/api/api-spec.json` and run the web client generation/build checks.
+- When the contract changes, synchronize it to client repositories and regenerate the affected web or mobile client. The current web copy lives at `erics-barbers-ui/api/api-spec.json`; mobile generation will consume the same API-owned artifact when its API layer is introduced.
 
 The generation script supplies inert defaults for secrets and the database URL and does not connect to PostgreSQL. See [docs/openapi.md](docs/openapi.md) for the contract ownership, Mobile 1.0 coverage, compatibility procedure, and booking-specific semantics.
+
+Browser authentication continues through the Next.js BFF and HttpOnly cookies. The mobile app will call this API directly using an explicit native token contract; the API must not infer the client from User-Agent or incidental headers.
 
 ## Authentication Notes
 

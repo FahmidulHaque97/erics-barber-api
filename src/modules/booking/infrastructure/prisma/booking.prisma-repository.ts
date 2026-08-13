@@ -20,8 +20,12 @@ import {
   assertAppointmentDateIsBookable,
   assertBookingCanBeChangedOnline,
 } from 'src/common/utils/booking-policy';
+import { createHash } from 'node:crypto';
+import { ApiConflictException } from 'src/common/exceptions/api-conflict.exception';
 
 const BOOKING_SLOT_MINUTES = 30;
+const IDEMPOTENCY_RETENTION_MILLISECONDS = 24 * 60 * 60 * 1000;
+const IDEMPOTENCY_IN_PROGRESS_MILLISECONDS = 2 * 60 * 1000;
 
 @Injectable()
 export class BookingService {
@@ -30,18 +34,16 @@ export class BookingService {
     private readonly availabilityService: AvailabilityService,
   ) {}
 
-  async createBooking(userId: string | undefined, dto: CreateBookingDto) {
+  async createBooking(
+    userId: string | undefined,
+    idempotencyKey: string,
+    dto: CreateBookingDto,
+  ) {
+    if (!idempotencyKey || !this.isUuidV4(idempotencyKey)) {
+      throw new BadRequestException('Idempotency-Key must be a valid UUID v4');
+    }
+
     assertAppointmentDateIsBookable(dto.appointmentDate);
-
-    await this.availabilityService.assertSlotAvailable({
-      barberId: dto.barberId,
-      serviceId: dto.serviceId,
-      startTime: dto.appointmentDate,
-    });
-
-    const appointmentEndTime = new Date(
-      dto.appointmentDate.getTime() + BOOKING_SLOT_MINUTES * 60 * 1000,
-    );
 
     const user = userId
       ? await this.prismaService.user.findUnique({
@@ -64,18 +66,110 @@ export class BookingService {
       );
     }
 
-    const booking = await this.createBookingRow({
-      userId,
-      customerName,
+    const scope = userId
+      ? `user:${userId}`
+      : `guest:${customerEmail.trim().toLowerCase()}`;
+    const requestHash = this.hashBookingRequest(scope, {
+      ...dto,
       customerEmail,
+      customerName,
       customerPhone,
-      serviceId: dto.serviceId,
-      barberId: dto.barberId,
-      appointmentDate: dto.appointmentDate,
-      appointmentEndTime,
     });
+    const existingIntent =
+      await this.prismaService.bookingCreationIdempotency.findUnique({
+        where: { key: idempotencyKey },
+        include: {
+          booking: { include: { service: true, barber: true } },
+        },
+      });
 
-    return booking;
+    if (existingIntent && existingIntent.expiresAt > new Date()) {
+      return this.resolveExistingIntent(existingIntent, scope, requestHash);
+    }
+
+    if (existingIntent) {
+      await this.prismaService.bookingCreationIdempotency.deleteMany({
+        where: { key: idempotencyKey, expiresAt: { lte: new Date() } },
+      });
+    }
+
+    try {
+      await this.prismaService.bookingCreationIdempotency.create({
+        data: {
+          key: idempotencyKey,
+          scope,
+          requestHash,
+          expiresAt: new Date(
+            Date.now() + IDEMPOTENCY_IN_PROGRESS_MILLISECONDS,
+          ),
+        },
+      });
+    } catch (error) {
+      if (!this.isUniqueConstraintError(error)) {
+        throw error;
+      }
+
+      const competingIntent =
+        await this.prismaService.bookingCreationIdempotency.findUnique({
+          where: { key: idempotencyKey },
+          include: {
+            booking: { include: { service: true, barber: true } },
+          },
+        });
+
+      if (!competingIntent) {
+        throw error;
+      }
+
+      return this.resolveExistingIntent(competingIntent, scope, requestHash);
+    }
+
+    try {
+      await this.availabilityService.assertSlotAvailable({
+        barberId: dto.barberId,
+        serviceId: dto.serviceId,
+        startTime: dto.appointmentDate,
+      });
+
+      const service = await this.prismaService.service.findFirst({
+        where: { id: dto.serviceId, isActive: true },
+      });
+
+      if (!service) {
+        throw new NotFoundException('Service not found');
+      }
+
+      const appointmentEndTime = new Date(
+        dto.appointmentDate.getTime() + service.durationMinutes * 60 * 1000,
+      );
+
+      return await this.createBookingRow({
+        userId,
+        customerName,
+        customerEmail,
+        customerPhone,
+        serviceId: dto.serviceId,
+        barberId: dto.barberId,
+        appointmentDate: dto.appointmentDate,
+        appointmentEndTime,
+        idempotencyKey,
+        requestHash,
+        scope,
+        serviceDurationMinutesSnapshot: service.durationMinutes,
+        serviceNameSnapshot: service.name,
+        servicePricePenceSnapshot: service.pricePence,
+      });
+    } catch (error) {
+      await this.prismaService.bookingCreationIdempotency.deleteMany({
+        where: {
+          key: idempotencyKey,
+          requestHash,
+          scope,
+          bookingId: null,
+        },
+      });
+      throw error;
+    }
   }
 
   async updateBooking(
@@ -115,11 +209,24 @@ export class BookingService {
     }
 
     const appointmentStartTime = dto.appointmentDate ?? booking.startTime;
+    const selectedService = dto.serviceId
+      ? await this.prismaService.service.findFirst({
+          where: { id: dto.serviceId, isActive: true },
+        })
+      : null;
+
+    if (dto.serviceId && !selectedService) {
+      throw new NotFoundException('Service not found');
+    }
+
+    const durationMinutes =
+      selectedService?.durationMinutes ??
+      booking.serviceDurationMinutesSnapshot ??
+      booking.service?.durationMinutes ??
+      BOOKING_SLOT_MINUTES;
     const appointmentEndTime =
       dto.appointmentDate || dto.serviceId
-        ? new Date(
-            appointmentStartTime.getTime() + BOOKING_SLOT_MINUTES * 60 * 1000,
-          )
+        ? new Date(appointmentStartTime.getTime() + durationMinutes * 60 * 1000)
         : undefined;
 
     // Check booking time is available
@@ -138,6 +245,9 @@ export class BookingService {
       barberId: dto.barberId,
       startTime: dto.appointmentDate,
       endTime: appointmentEndTime,
+      serviceNameSnapshot: selectedService?.name,
+      serviceDurationMinutesSnapshot: selectedService?.durationMinutes,
+      servicePricePenceSnapshot: selectedService?.pricePence,
     });
 
     return updatedBooking;
@@ -191,11 +301,24 @@ export class BookingService {
     }
 
     const appointmentStartTime = dto.appointmentDate ?? booking.startTime;
+    const selectedService = dto.serviceId
+      ? await this.prismaService.service.findFirst({
+          where: { id: dto.serviceId, isActive: true },
+        })
+      : null;
+
+    if (dto.serviceId && !selectedService) {
+      throw new NotFoundException('Service not found');
+    }
+
+    const durationMinutes =
+      selectedService?.durationMinutes ??
+      booking.serviceDurationMinutesSnapshot ??
+      booking.service?.durationMinutes ??
+      BOOKING_SLOT_MINUTES;
     const appointmentEndTime =
       dto.appointmentDate || dto.serviceId
-        ? new Date(
-            appointmentStartTime.getTime() + BOOKING_SLOT_MINUTES * 60 * 1000,
-          )
+        ? new Date(appointmentStartTime.getTime() + durationMinutes * 60 * 1000)
         : undefined;
 
     if (dto.appointmentDate || dto.serviceId || dto.barberId) {
@@ -212,6 +335,9 @@ export class BookingService {
       barberId: dto.barberId,
       startTime: dto.appointmentDate,
       endTime: appointmentEndTime,
+      serviceNameSnapshot: selectedService?.name,
+      serviceDurationMinutesSnapshot: selectedService?.durationMinutes,
+      servicePricePenceSnapshot: selectedService?.pricePence,
     });
 
     return updatedBooking;
@@ -321,6 +447,12 @@ export class BookingService {
     barberId: string;
     appointmentDate: Date;
     appointmentEndTime: Date;
+    idempotencyKey: string;
+    requestHash: string;
+    scope: string;
+    serviceDurationMinutesSnapshot: number;
+    serviceNameSnapshot: string;
+    servicePricePenceSnapshot: number;
   }) {
     try {
       return await this.prismaService.$transaction(async (tx) => {
@@ -331,6 +463,10 @@ export class BookingService {
             customerEmail: options.customerEmail,
             customerPhone: options.customerPhone,
             serviceId: options.serviceId,
+            serviceNameSnapshot: options.serviceNameSnapshot,
+            serviceDurationMinutesSnapshot:
+              options.serviceDurationMinutesSnapshot,
+            servicePricePenceSnapshot: options.servicePricePenceSnapshot,
             barberId: options.barberId,
             status: BookingStatus.CONFIRMED,
             startTime: options.appointmentDate,
@@ -339,6 +475,16 @@ export class BookingService {
           include: {
             service: true,
             barber: true,
+          },
+        });
+
+        await tx.bookingCreationIdempotency.update({
+          where: { key: options.idempotencyKey },
+          data: {
+            bookingId: booking.id,
+            expiresAt: new Date(
+              Date.now() + IDEMPOTENCY_RETENTION_MILLISECONDS,
+            ),
           },
         });
 
@@ -364,6 +510,9 @@ export class BookingService {
       barberId?: string;
       startTime?: Date;
       endTime?: Date;
+      serviceNameSnapshot?: string;
+      serviceDurationMinutesSnapshot?: number;
+      servicePricePenceSnapshot?: number;
     },
   ) {
     try {
@@ -435,6 +584,8 @@ export class BookingService {
       status: BookingStatus;
       barber?: { displayName: string } | null;
       service?: { name: string; pricePence: number } | null;
+      serviceNameSnapshot?: string | null;
+      servicePricePenceSnapshot?: number | null;
     },
   ) {
     await tx.outboxEvent.create({
@@ -445,8 +596,12 @@ export class BookingService {
           appointmentDate: booking.startTime.toISOString(),
           barberName: booking.barber?.displayName ?? null,
           bookingReference: booking.id,
-          pricePence: booking.service?.pricePence ?? null,
-          serviceName: booking.service?.name ?? null,
+          pricePence:
+            booking.servicePricePenceSnapshot ??
+            booking.service?.pricePence ??
+            null,
+          serviceName:
+            booking.serviceNameSnapshot ?? booking.service?.name ?? null,
           status: booking.status,
           to,
         },
@@ -455,12 +610,69 @@ export class BookingService {
   }
 
   private throwSlotConflictIfUniqueConstraint(error: unknown): never | void {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
-    ) {
+    if (this.isUniqueConstraintError(error)) {
       throw new ConflictException('Booking time is not available');
     }
+  }
+
+  private isUniqueConstraintError(error: unknown) {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    );
+  }
+
+  private resolveExistingIntent(
+    intent: {
+      scope: string;
+      requestHash: string;
+      booking: unknown;
+    },
+    scope: string,
+    requestHash: string,
+  ) {
+    if (intent.scope !== scope || intent.requestHash !== requestHash) {
+      throw new ApiConflictException(
+        'IDEMPOTENCY_KEY_REUSED',
+        'Idempotency key was already used for different booking details',
+      );
+    }
+
+    if (intent.booking) {
+      return intent.booking;
+    }
+
+    throw new ApiConflictException(
+      'IDEMPOTENCY_REQUEST_IN_PROGRESS',
+      'A booking request with this idempotency key is still being processed',
+    );
+  }
+
+  private hashBookingRequest(
+    scope: string,
+    dto: CreateBookingDto & {
+      customerName: string;
+      customerEmail: string;
+      customerPhone: string | undefined;
+    },
+  ) {
+    const normalized = JSON.stringify({
+      appointmentDate: dto.appointmentDate.toISOString(),
+      barberId: dto.barberId.trim(),
+      customerEmail: dto.customerEmail.trim().toLowerCase(),
+      customerName: dto.customerName.trim(),
+      customerPhone: dto.customerPhone?.trim() ?? null,
+      scope,
+      serviceId: dto.serviceId.trim(),
+    });
+
+    return createHash('sha256').update(normalized).digest('hex');
+  }
+
+  private isUuidV4(value: string) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    );
   }
 
   private async getBookingAccessWhere(

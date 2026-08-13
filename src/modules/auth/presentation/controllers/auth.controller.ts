@@ -15,6 +15,11 @@ import {
   ApiResponse,
   ApiOkResponse,
   ApiCreatedResponse,
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiExtraModels,
+  ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
@@ -55,10 +60,18 @@ import {
   AccountLookupDto,
   AccountLookupResponseDto,
 } from '../dto/account-lookup.dto';
+import {
+  LoginMfaRequiredResponseDto,
+  LoginResponseDto,
+} from '../dto/login.dto';
+import { MessageResponseDto } from 'src/common/dto/http-response.dto';
+import { ProfileResponseDto } from '../dto/profile.dto';
 
 const ONE_MINUTE = 60_000;
 const ONE_HOUR = 60 * 60_000;
 
+@ApiTags('Auth')
+@ApiExtraModels(LoginResponseDto, LoginMfaRequiredResponseDto)
 @Controller('auth')
 @UseInterceptors(AuthLoggingInterceptor)
 export class AuthController {
@@ -82,6 +95,7 @@ export class AuthController {
   @HttpCode(201)
   @ApiCreatedResponse({
     description: 'User registered successfully',
+    type: MessageResponseDto,
   })
   @Throttle({ default: { limit: 5, ttl: ONE_MINUTE } })
   @Post('register')
@@ -97,6 +111,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Verification email sent successfully',
+    type: MessageResponseDto,
   })
   @Throttle({ default: { limit: 3, ttl: ONE_HOUR } })
   @Post('send-verification-email')
@@ -150,6 +165,12 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'User logged in successfully',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(LoginResponseDto) },
+        { $ref: getSchemaPath(LoginMfaRequiredResponseDto) },
+      ],
+    },
   })
   @Throttle({ default: { limit: 10, ttl: ONE_MINUTE } })
   @Post('login')
@@ -183,7 +204,9 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'User profile retrieved successfully',
+    type: ProfileResponseDto,
   })
+  @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Get('profile')
   async getProfile(@CurrentUser() userId: string) {
@@ -193,7 +216,9 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'User profile updated successfully',
+    type: ProfileResponseDto,
   })
+  @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Put('profile')
   async updateProfile(
@@ -206,7 +231,9 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'Account deleted successfully',
+    type: MessageResponseDto,
   })
+  @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Delete('account')
   async deleteAccount(
@@ -227,7 +254,9 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'User logged out successfully',
+    type: MessageResponseDto,
   })
+  @ApiCookieAuth('refreshToken')
   @Throttle({ default: { limit: 30, ttl: ONE_MINUTE } })
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
@@ -246,6 +275,7 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'Password reset link sent to email if it exists',
+    type: MessageResponseDto,
   })
   @Throttle({ default: { limit: 3, ttl: ONE_HOUR } })
   @Post('reset-password-email')
@@ -257,6 +287,7 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'Password reset successfully',
+    type: MessageResponseDto,
   })
   @Throttle({ default: { limit: 10, ttl: ONE_MINUTE } })
   @Post('reset-password')
@@ -268,6 +299,7 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'MFA verified successfully',
+    type: LoginResponseDto,
   })
   @Throttle({ default: { limit: 10, ttl: ONE_MINUTE } })
   @Post('verify-mfa')
@@ -296,7 +328,9 @@ export class AuthController {
   @HttpCode(200)
   @ApiOkResponse({
     description: 'MFA preference updated successfully',
+    type: MessageResponseDto,
   })
+  @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Put('mfa-preference')
   async updateMfaPreference(
@@ -312,6 +346,7 @@ export class AuthController {
     description: 'Access token refreshed successfully',
     type: RefreshTokenResponseDto,
   })
+  @ApiCookieAuth('refreshToken')
   @Throttle({ default: { limit: 30, ttl: ONE_MINUTE } })
   @Post('refresh')
   async refreshTokens(

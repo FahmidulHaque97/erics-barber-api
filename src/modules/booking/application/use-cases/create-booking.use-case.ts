@@ -5,7 +5,11 @@ import { BookingService } from '../../infrastructure/prisma/booking.prisma-repos
 @Injectable()
 export class CreateBookingUseCase {
   constructor(private readonly bookingService: BookingService) {}
-  async execute(userId: string | undefined, dto: CreateBookingDto) {
-    return await this.bookingService.createBooking(userId, dto);
+  async execute(
+    userId: string | undefined,
+    idempotencyKey: string,
+    dto: CreateBookingDto,
+  ) {
+    return await this.bookingService.createBooking(userId, idempotencyKey, dto);
   }
 }

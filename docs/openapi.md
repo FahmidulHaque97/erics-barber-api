@@ -15,6 +15,12 @@ npm run openapi:check
 
 Generation does not connect to the placeholder database. `openapi:check` exits unsuccessfully if the committed JSON is stale, so it can be used as a CI drift check.
 
+## Local pre-commit check
+
+Installing the repository dependencies runs the `prepare` script and activates the tracked Husky hooks. Before each commit, `.husky/pre-commit` runs `npm run openapi:check`.
+
+If the canonical contract is stale, the command exits unsuccessfully and Git rejects the commit. Run `npm run openapi:generate`, review and stage `openapi/openapi.json`, then commit again. CI should continue to run `npm run openapi:check` as the authoritative shared check because local hooks can be skipped or may not yet be installed.
+
 After an accepted contract change, copy the canonical document to the web client and regenerate its client:
 
 ```bash

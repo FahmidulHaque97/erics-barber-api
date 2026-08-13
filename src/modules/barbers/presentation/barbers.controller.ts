@@ -22,7 +22,17 @@ import { CreateBarberDto } from './dto/create-barber.dto';
 import { UpdateBarberUseCase } from '../application/use-cases/update-barber.use-case';
 import { DeleteBarberDto } from './dto/delete-barber.dto';
 import { UpdateBarberDto } from './dto/update-barber.dto';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { BarberResponseDto } from './dto/barber-response.dto';
+import { MessageResponseDto } from 'src/common/dto/http-response.dto';
 
+@ApiTags('Barbers')
 @Controller('barbers')
 export class BarbersController {
   constructor(
@@ -34,6 +44,8 @@ export class BarbersController {
   ) {}
 
   @HttpCode(200)
+  @ApiOperation({ summary: 'List active barbers available for booking' })
+  @ApiOkResponse({ type: BarberResponseDto, isArray: true })
   @Get('')
   async getBarbers() {
     const barbers = await this.getBarbersUseCase.execute();
@@ -41,6 +53,8 @@ export class BarbersController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: BarberResponseDto })
   @Get(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin, Role.Customer, Role.Barber)
@@ -50,6 +64,8 @@ export class BarbersController {
   }
 
   @HttpCode(201)
+  @ApiBearerAuth()
+  @ApiCreatedResponse({ type: MessageResponseDto })
   @Post('')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin)
@@ -59,6 +75,8 @@ export class BarbersController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: MessageResponseDto })
   @Put(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin)
@@ -68,6 +86,8 @@ export class BarbersController {
   }
 
   @HttpCode(200)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: MessageResponseDto })
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.Admin)

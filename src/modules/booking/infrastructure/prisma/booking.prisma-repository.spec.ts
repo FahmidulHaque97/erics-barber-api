@@ -35,14 +35,32 @@ describe('BookingService', () => {
         update: jest.fn(),
         updateMany: jest.fn(),
       },
+      service: {
+        findFirst: jest.fn(),
+      },
+      bookingCreationIdempotency: {
+        create: jest.fn(),
+        deleteMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
       outboxEvent: {
         create: jest.fn(),
       },
     };
 
-    prismaService.$transaction.mockImplementation(async (callback) =>
-      callback(prismaService),
-    );
+    prismaService.$transaction.mockImplementation((callback: unknown) => {
+      const transaction = callback as (client: typeof prismaService) => unknown;
+      return Promise.resolve(transaction(prismaService));
+    });
+    prismaService.bookingCreationIdempotency.findUnique.mockResolvedValue(null);
+    prismaService.service.findFirst.mockResolvedValue({
+      id: 'service-id',
+      name: 'Haircut',
+      durationMinutes: 30,
+      pricePence: 2500,
+      isActive: true,
+    });
 
     return prismaService;
   };
@@ -92,11 +110,15 @@ describe('BookingService', () => {
     );
     const appointmentDate = new Date('2026-08-01T10:00:00.000Z');
 
-    const result = await bookingService.createBooking('customer-id', {
-      serviceId: 'service-id',
-      barberId: 'barber-id',
-      appointmentDate,
-    });
+    const result = await bookingService.createBooking(
+      'customer-id',
+      '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+      {
+        serviceId: 'service-id',
+        barberId: 'barber-id',
+        appointmentDate,
+      },
+    );
 
     expect(availabilityService.assertSlotAvailable).toHaveBeenCalledWith({
       barberId: 'barber-id',
@@ -110,6 +132,9 @@ describe('BookingService', () => {
         customerEmail: 'customer@example.com',
         customerPhone: undefined,
         serviceId: 'service-id',
+        serviceNameSnapshot: 'Haircut',
+        serviceDurationMinutesSnapshot: 30,
+        servicePricePenceSnapshot: 2500,
         barberId: 'barber-id',
         status: BookingStatus.CONFIRMED,
         startTime: appointmentDate,
@@ -161,14 +186,18 @@ describe('BookingService', () => {
     );
     const appointmentDate = new Date('2026-08-01T10:00:00.000Z');
 
-    const result = await bookingService.createBooking(undefined, {
-      appointmentDate,
-      barberId: 'barber-id',
-      customerEmail: 'guest@example.com',
-      customerName: 'Guest Customer',
-      customerPhone: '+447900000000',
-      serviceId: 'service-id',
-    });
+    const result = await bookingService.createBooking(
+      undefined,
+      '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+      {
+        appointmentDate,
+        barberId: 'barber-id',
+        customerEmail: 'guest@example.com',
+        customerName: 'Guest Customer',
+        customerPhone: '+447900000000',
+        serviceId: 'service-id',
+      },
+    );
 
     expect(prismaService.user.findUnique).not.toHaveBeenCalled();
     expect(prismaService.booking.create).toHaveBeenCalledWith({
@@ -178,6 +207,9 @@ describe('BookingService', () => {
         customerEmail: 'guest@example.com',
         customerPhone: '+447900000000',
         serviceId: 'service-id',
+        serviceNameSnapshot: 'Haircut',
+        serviceDurationMinutesSnapshot: 30,
+        servicePricePenceSnapshot: 2500,
         barberId: 'barber-id',
         status: BookingStatus.CONFIRMED,
         startTime: appointmentDate,
@@ -207,6 +239,131 @@ describe('BookingService', () => {
     expect(result).toBe(createdBooking);
   });
 
+  it('replays the original booking for an identical idempotent retry', async () => {
+    const prismaService = createPrismaService();
+    const booking = { id: 'booking-id' };
+    prismaService.user.findUnique.mockResolvedValue({
+      email: 'customer@example.com',
+      name: 'Customer Name',
+    });
+    const bookingService = new BookingService(
+      prismaService as never,
+      availabilityService as never,
+    );
+    const dto = {
+      appointmentDate: new Date('2026-08-01T10:00:00.000Z'),
+      barberId: 'barber-id',
+      serviceId: 'service-id',
+    };
+    const requestHash = (
+      bookingService as unknown as {
+        hashBookingRequest: (scope: string, value: unknown) => string;
+      }
+    ).hashBookingRequest('user:customer-id', {
+      ...dto,
+      customerEmail: 'customer@example.com',
+      customerName: 'Customer Name',
+      customerPhone: undefined,
+    });
+    prismaService.bookingCreationIdempotency.findUnique.mockResolvedValue({
+      booking,
+      expiresAt: new Date('2026-07-02T09:00:00.000Z'),
+      requestHash,
+      scope: 'user:customer-id',
+    });
+
+    const result = await bookingService.createBooking(
+      'customer-id',
+      '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+      dto,
+    );
+
+    expect(result).toBe(booking);
+    expect(availabilityService.assertSlotAvailable).not.toHaveBeenCalled();
+    expect(prismaService.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('replays a completed competing request after a concurrent key claim', async () => {
+    const prismaService = createPrismaService();
+    const booking = { id: 'booking-id' };
+    prismaService.user.findUnique.mockResolvedValue({
+      email: 'customer@example.com',
+      name: 'Customer Name',
+    });
+    const bookingService = new BookingService(
+      prismaService as never,
+      availabilityService as never,
+    );
+    const dto = {
+      appointmentDate: new Date('2026-08-01T10:00:00.000Z'),
+      barberId: 'barber-id',
+      serviceId: 'service-id',
+    };
+    const requestHash = (
+      bookingService as unknown as {
+        hashBookingRequest: (scope: string, value: unknown) => string;
+      }
+    ).hashBookingRequest('user:customer-id', {
+      ...dto,
+      customerEmail: 'customer@example.com',
+      customerName: 'Customer Name',
+      customerPhone: undefined,
+    });
+    prismaService.bookingCreationIdempotency.create.mockRejectedValue(
+      createUniqueConstraintError(),
+    );
+    prismaService.bookingCreationIdempotency.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        booking,
+        expiresAt: new Date('2026-07-02T09:00:00.000Z'),
+        requestHash,
+        scope: 'user:customer-id',
+      });
+
+    const result = await bookingService.createBooking(
+      'customer-id',
+      '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+      dto,
+    );
+
+    expect(result).toBe(booking);
+    expect(prismaService.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects changed details when an idempotency key is reused', async () => {
+    const prismaService = createPrismaService();
+    prismaService.bookingCreationIdempotency.findUnique.mockResolvedValue({
+      booking: { id: 'booking-id' },
+      expiresAt: new Date('2026-07-02T09:00:00.000Z'),
+      requestHash: 'different-request',
+      scope: 'guest:guest@example.com',
+    });
+    const bookingService = new BookingService(
+      prismaService as never,
+      availabilityService as never,
+    );
+
+    const rejection = expect(
+      bookingService.createBooking(
+        undefined,
+        '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+        {
+          appointmentDate: new Date('2026-08-01T10:00:00.000Z'),
+          barberId: 'barber-id',
+          customerEmail: 'guest@example.com',
+          customerName: 'Guest Customer',
+          customerPhone: '+447900000000',
+          serviceId: 'service-id',
+        },
+      ),
+    ).rejects.toMatchObject({
+      response: { code: 'IDEMPOTENCY_KEY_REUSED' },
+      status: 409,
+    });
+    await rejection;
+  });
+
   it('rejects guest bookings without contact details', async () => {
     const prismaService = createPrismaService();
     availabilityService.assertSlotAvailable.mockResolvedValue(undefined);
@@ -217,11 +374,15 @@ describe('BookingService', () => {
     );
 
     await expect(
-      bookingService.createBooking(undefined, {
-        serviceId: 'service-id',
-        barberId: 'barber-id',
-        appointmentDate: new Date('2026-08-01T10:00:00.000Z'),
-      }),
+      bookingService.createBooking(
+        undefined,
+        '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+        {
+          serviceId: 'service-id',
+          barberId: 'barber-id',
+          appointmentDate: new Date('2026-08-01T10:00:00.000Z'),
+        },
+      ),
     ).rejects.toThrow('Customer name, email, and phone are required');
 
     expect(prismaService.booking.create).not.toHaveBeenCalled();
@@ -235,14 +396,18 @@ describe('BookingService', () => {
     );
 
     await expect(
-      bookingService.createBooking(undefined, {
-        serviceId: 'service-id',
-        barberId: 'barber-id',
-        appointmentDate: new Date('2026-07-01T10:00:00.000Z'),
-        customerEmail: 'guest@example.com',
-        customerName: 'Guest Customer',
-        customerPhone: '+447900000000',
-      }),
+      bookingService.createBooking(
+        undefined,
+        '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+        {
+          serviceId: 'service-id',
+          barberId: 'barber-id',
+          appointmentDate: new Date('2026-07-01T10:00:00.000Z'),
+          customerEmail: 'guest@example.com',
+          customerName: 'Guest Customer',
+          customerPhone: '+447900000000',
+        },
+      ),
     ).rejects.toThrow('Bookings cannot be made for today or a past date');
 
     expect(availabilityService.assertSlotAvailable).not.toHaveBeenCalled();
@@ -257,14 +422,18 @@ describe('BookingService', () => {
     );
 
     await expect(
-      bookingService.createBooking(undefined, {
-        serviceId: 'service-id',
-        barberId: 'barber-id',
-        appointmentDate: new Date('2026-08-02T10:00:00.000Z'),
-        customerEmail: 'guest@example.com',
-        customerName: 'Guest Customer',
-        customerPhone: '+447900000000',
-      }),
+      bookingService.createBooking(
+        undefined,
+        '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+        {
+          serviceId: 'service-id',
+          barberId: 'barber-id',
+          appointmentDate: new Date('2026-08-02T10:00:00.000Z'),
+          customerEmail: 'guest@example.com',
+          customerName: 'Guest Customer',
+          customerPhone: '+447900000000',
+        },
+      ),
     ).rejects.toThrow('Bookings can only be made up to 1 month in advance');
 
     expect(availabilityService.assertSlotAvailable).not.toHaveBeenCalled();
@@ -273,6 +442,10 @@ describe('BookingService', () => {
 
   it('rejects bookings that do not start on a half-hour boundary', async () => {
     const prismaService = createPrismaService();
+    prismaService.user.findUnique.mockResolvedValue({
+      email: 'customer@example.com',
+      name: 'Customer Name',
+    });
     availabilityService.assertSlotAvailable.mockRejectedValue(
       new Error('Booking start time must be on the hour or half hour'),
     );
@@ -283,11 +456,15 @@ describe('BookingService', () => {
     );
 
     await expect(
-      bookingService.createBooking('customer-id', {
-        serviceId: 'service-id',
-        barberId: 'barber-id',
-        appointmentDate: new Date('2026-08-01T10:15:00.000Z'),
-      }),
+      bookingService.createBooking(
+        'customer-id',
+        '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+        {
+          serviceId: 'service-id',
+          barberId: 'barber-id',
+          appointmentDate: new Date('2026-08-01T10:15:00.000Z'),
+        },
+      ),
     ).rejects.toThrow('Booking start time must be on the hour or half hour');
   });
 
@@ -308,11 +485,15 @@ describe('BookingService', () => {
     );
 
     await expect(
-      bookingService.createBooking('customer-id', {
-        serviceId: 'service-id',
-        barberId: 'barber-id',
-        appointmentDate: new Date('2026-08-01T10:00:00.000Z'),
-      }),
+      bookingService.createBooking(
+        'customer-id',
+        '93f86393-7e60-4f2e-bf22-ef9f95d6e071',
+        {
+          serviceId: 'service-id',
+          barberId: 'barber-id',
+          appointmentDate: new Date('2026-08-01T10:00:00.000Z'),
+        },
+      ),
     ).rejects.toThrow('Booking time is not available');
 
     expect(prismaService.outboxEvent.create).not.toHaveBeenCalled();

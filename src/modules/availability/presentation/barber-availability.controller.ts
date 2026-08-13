@@ -1,8 +1,16 @@
 import { Controller, Get, HttpCode, Param, Query } from '@nestjs/common';
-import { ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetAvailabilitySlotsUseCase } from '../application/use-cases/get-availability-slots.use-case';
 import { GetBarberAvailabilitySlotsQueryDto } from './dto/get-availability-slots.dto';
+import { AvailabilityResponseDto } from './dto/availability-response.dto';
 
+@ApiTags('Availability')
 @Controller('barbers/:barberId/availability')
 export class BarberAvailabilityController {
   constructor(
@@ -10,6 +18,8 @@ export class BarberAvailabilityController {
   ) {}
 
   @HttpCode(200)
+  @ApiOperation({ summary: 'List bookable slots for one barber and date' })
+  @ApiOkResponse({ type: AvailabilityResponseDto })
   @ApiParam({ name: 'barberId', required: true, type: String })
   @ApiQuery({
     name: 'date',
