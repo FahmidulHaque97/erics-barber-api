@@ -11,12 +11,15 @@
   "scripts": {
     "build": "nest build",
     "build:deploy": "npx prisma generate && nest build",
+    "prepare": "husky",
     "db:deploy": "npx prisma migrate deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "format:prisma": "npx prisma format",
     "db:booking:seed": "ts-node -r tsconfig-paths/register scripts/seed-booking-dev.ts",
     "db:booking:reset": "ts-node -r tsconfig-paths/register scripts/reset-booking-dev.ts",
     "db:booking:reseed": "npm run db:booking:reset && npm run db:booking:seed",
+    "openapi:generate": "ts-node --files -r tsconfig-paths/register scripts/generate-openapi.ts",
+    "openapi:check": "ts-node --files -r tsconfig-paths/register scripts/generate-openapi.ts --check",
     "prisma:ui": "npx prisma studio",
     "start": "node dist/src/main",
     "start:dev": "nest start --watch",
@@ -103,11 +106,6 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   },
   "lint-staged": {
     "src/**/*.ts": [

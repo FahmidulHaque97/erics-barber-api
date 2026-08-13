@@ -1,0 +1,2252 @@
+{
+  "components": {
+    "schemas": {
+      "AccountLookupDto": {
+        "properties": {
+          "email": {
+            "description": "Email address to check for an existing account.",
+            "example": "customer@example.com",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "AccountLookupResponseDto": {
+        "properties": {
+          "exists": {
+            "description": "Whether an account exists for the submitted email.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "exists"
+        ],
+        "type": "object"
+      },
+      "AvailabilityHourResponseDto": {
+        "properties": {
+          "hour": {
+            "example": "10",
+            "type": "string"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/AvailabilitySlotResponseDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "hour",
+          "slots"
+        ],
+        "type": "object"
+      },
+      "AvailabilityResponseDto": {
+        "properties": {
+          "barberId": {
+            "type": "string"
+          },
+          "date": {
+            "example": "2026-08-13",
+            "type": "string"
+          },
+          "hours": {
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityHourResponseDto"
+            },
+            "type": "array"
+          },
+          "serviceId": {
+            "type": "string"
+          },
+          "slotMinutes": {
+            "example": 30,
+            "type": "number"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/AvailabilitySlotResponseDto"
+            },
+            "type": "array"
+          },
+          "timeZone": {
+            "example": "Europe/London",
+            "type": "string"
+          }
+        },
+        "required": [
+          "barberId",
+          "date",
+          "slotMinutes",
+          "timeZone",
+          "slots",
+          "hours"
+        ],
+        "type": "object"
+      },
+      "AvailabilitySlotResponseDto": {
+        "properties": {
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "hour": {
+            "example": "10",
+            "type": "string"
+          },
+          "label": {
+            "example": "10:00",
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "startTime",
+          "endTime",
+          "label",
+          "hour"
+        ],
+        "type": "object"
+      },
+      "BarberResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deactivatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "displayName",
+          "isActive",
+          "phone",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "BookingBarberDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "isActive",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "BookingDto": {
+        "properties": {
+          "barber": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingBarberDto"
+              }
+            ],
+            "nullable": true
+          },
+          "barberId": {
+            "nullable": true,
+            "type": "object"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "cancelledByUserId": {
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "customerEmail": {
+            "nullable": true,
+            "type": "object"
+          },
+          "customerName": {
+            "nullable": true,
+            "type": "object"
+          },
+          "customerPhone": {
+            "nullable": true,
+            "type": "object"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "service": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingServiceDto"
+              }
+            ],
+            "nullable": true
+          },
+          "serviceDurationMinutesSnapshot": {
+            "nullable": true,
+            "type": "object"
+          },
+          "serviceId": {
+            "nullable": true,
+            "type": "object"
+          },
+          "serviceNameSnapshot": {
+            "nullable": true,
+            "type": "object"
+          },
+          "servicePricePenceSnapshot": {
+            "nullable": true,
+            "type": "object"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CONFIRMED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "userId": {
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "startTime",
+          "endTime",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "BookingLookupResponseDto": {
+        "properties": {
+          "booking": {
+            "$ref": "#/components/schemas/BookingDto"
+          }
+        },
+        "required": [
+          "booking"
+        ],
+        "type": "object"
+      },
+      "BookingMutationResponseDto": {
+        "properties": {
+          "booking": {
+            "$ref": "#/components/schemas/BookingDto"
+          },
+          "message": {
+            "example": "Booking created successfully",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "booking"
+        ],
+        "type": "object"
+      },
+      "BookingReferenceDto": {
+        "properties": {
+          "reference": {
+            "description": "High-entropy UUID booking reference shown to the customer.",
+            "example": "93f86393-7e60-4f2e-bf22-ef9f95d6e071",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference"
+        ],
+        "type": "object"
+      },
+      "BookingServiceDto": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pricePence": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "pricePence",
+          "durationMinutes",
+          "isActive"
+        ],
+        "type": "object"
+      },
+      "CreateBarberDto": {
+        "properties": {
+          "barberId": {
+            "description": "Barber ID",
+            "example": "dfsdfmk",
+            "type": "string"
+          },
+          "email": {
+            "description": "Barber's email address",
+            "example": "eric@barbershop-luton.com",
+            "type": "string"
+          },
+          "name": {
+            "description": "Barber's Name",
+            "example": "Eric",
+            "type": "string"
+          },
+          "phone": {
+            "description": "Barber's phone number",
+            "example": "+44 7907882325",
+            "type": "string"
+          }
+        },
+        "required": [
+          "barberId",
+          "name",
+          "email",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "CreateBookingDto": {
+        "properties": {
+          "appointmentDate": {
+            "description": "Booking start time. Must be on the hour or half-hour mark, must not be today, and must be no more than 1 month ahead.",
+            "example": "2026-07-02T10:00:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "barberId": {
+            "description": "Barber selected for the booking.",
+            "example": "cmbarber123",
+            "type": "string"
+          },
+          "customerEmail": {
+            "description": "Customer email for guest bookings. Authenticated customers can omit this.",
+            "example": "customer@example.com",
+            "type": "string"
+          },
+          "customerName": {
+            "description": "Customer name for guest bookings. Authenticated customers can omit this.",
+            "example": "Eric Customer",
+            "type": "string"
+          },
+          "customerPhone": {
+            "description": "Customer phone number for guest bookings. Authenticated customers can omit this.",
+            "example": "+447900000000",
+            "type": "string"
+          },
+          "serviceId": {
+            "description": "Service selected for the booking.",
+            "example": "cmservice123",
+            "type": "string"
+          }
+        },
+        "required": [
+          "serviceId",
+          "barberId",
+          "appointmentDate"
+        ],
+        "type": "object"
+      },
+      "ErrorResponseDto": {
+        "properties": {
+          "code": {
+            "description": "Stable machine-readable code when the endpoint defines one.",
+            "example": "IDEMPOTENCY_KEY_REUSED",
+            "type": "string"
+          },
+          "error": {
+            "example": "Bad Request",
+            "type": "string"
+          },
+          "message": {
+            "example": "Request validation failed",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "statusCode": {
+            "example": 400,
+            "type": "number"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ],
+        "type": "object"
+      },
+      "LoginMfaRequiredResponseDto": {
+        "properties": {
+          "challengeId": {
+            "description": "Short-lived challenge ID to submit with the MFA code",
+            "example": "cmfchallenge123",
+            "type": "string"
+          },
+          "code": {
+            "example": "MFA_REQUIRED",
+            "type": "string"
+          },
+          "message": {
+            "example": "MFA required",
+            "type": "string"
+          },
+          "mfaMethod": {
+            "enum": [
+              "EMAIL"
+            ],
+            "example": "EMAIL",
+            "type": "string"
+          },
+          "mfaRequired": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "code",
+          "mfaRequired",
+          "challengeId",
+          "mfaMethod"
+        ],
+        "type": "object"
+      },
+      "LoginRequestDto": {
+        "properties": {
+          "email": {
+            "description": "User email address",
+            "example": "user@example.com",
+            "type": "string"
+          },
+          "password": {
+            "description": "Password must be 8-20 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+            "example": "Password123!",
+            "type": "string"
+          },
+          "rememberMe": {
+            "description": "When true, issue a longer-lived refresh session for staying signed in.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "LoginResponseDto": {
+        "properties": {
+          "accessToken": {
+            "description": "Access token",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          },
+          "message": {
+            "example": "User logged in successfully",
+            "type": "string"
+          },
+          "refreshMaxAgeSeconds": {
+            "description": "Refresh cookie lifetime the BFF should apply, in seconds.",
+            "example": 604800,
+            "type": "number"
+          },
+          "refreshToken": {
+            "description": "Refresh token. Intended for trusted server-side clients such as the Next.js BFF to set as an HttpOnly browser cookie.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "accessToken",
+          "refreshToken",
+          "refreshMaxAgeSeconds"
+        ],
+        "type": "object"
+      },
+      "MessageResponseDto": {
+        "properties": {
+          "message": {
+            "example": "Operation completed successfully",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "MfaDto": {
+        "properties": {
+          "challengeId": {
+            "description": "MFA challenge ID returned by the login endpoint",
+            "example": "cmfchallenge123",
+            "type": "string"
+          },
+          "code": {
+            "description": "Short-lived MFA code sent to the user",
+            "example": "123456",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challengeId",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MfaPreferenceDto": {
+        "properties": {
+          "enabled": {
+            "description": "Whether MFA should be required during login",
+            "example": true,
+            "type": "boolean"
+          },
+          "method": {
+            "enum": [
+              "EMAIL"
+            ],
+            "example": "EMAIL",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "ProfileResponseDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isEmailVerified": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "isEmailVerified"
+        ],
+        "type": "object"
+      },
+      "RefreshTokenResponseDto": {
+        "properties": {
+          "accessToken": {
+            "description": "Access token",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          },
+          "message": {
+            "description": "Success message",
+            "type": "string"
+          },
+          "refreshMaxAgeSeconds": {
+            "description": "Refresh cookie lifetime the BFF should apply, in seconds.",
+            "example": 604800,
+            "type": "number"
+          },
+          "refreshToken": {
+            "description": "Rotated refresh token. Intended for trusted server-side clients such as the Next.js BFF to set as an HttpOnly browser cookie.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "refreshMaxAgeSeconds",
+          "message"
+        ],
+        "type": "object"
+      },
+      "RegisterDto": {
+        "properties": {
+          "email": {
+            "description": "User email address",
+            "example": "user@example.com",
+            "type": "string"
+          },
+          "name": {
+            "description": "User display name",
+            "example": "Eric Barber",
+            "maxLength": 80,
+            "minLength": 2,
+            "type": "string"
+          },
+          "password": {
+            "description": "Password must be 8-20 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+            "example": "Password123!",
+            "maxLength": 20,
+            "minLength": 8,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "ResetPasswordDto": {
+        "properties": {
+          "newPassword": {
+            "description": "New password must be 8-20 characters long, contain at least one letter and one number",
+            "example": "NewPassword123",
+            "type": "string"
+          },
+          "token": {
+            "description": "Password reset token sent to the user email",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "newPassword"
+        ],
+        "type": "object"
+      },
+      "ResetPasswordEmailDto": {
+        "properties": {
+          "email": {
+            "description": "Email address to send the reset password email to",
+            "example": "user@example.com",
+            "type": "string"
+          },
+          "surface": {
+            "description": "Frontend surface that requested the reset link. Used to choose the correct configured reset URL.",
+            "enum": [
+              "CUSTOMER",
+              "STAFF"
+            ],
+            "example": "CUSTOMER",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "SendVerificationDto": {
+        "properties": {
+          "email": {
+            "description": "Email address to send the verification email to",
+            "example": "user@example.com",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "ServiceResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pricePence": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "pricePence",
+          "durationMinutes",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "UpdateBarberDto": {
+        "properties": {
+          "phone": {
+            "description": "Barber's phone number",
+            "example": "+44 7907882325",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateBookingDto": {
+        "properties": {
+          "appointmentDate": {
+            "description": "Replacement booking start time. Must be on the hour or half-hour mark, must not be today, and must be no more than 1 month ahead. Existing bookings can only be changed online up to the day before the appointment.",
+            "example": "2026-07-02T10:30:00.000Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "barberId": {
+            "description": "Replacement barber for the booking.",
+            "example": "cmbarber123",
+            "type": "string"
+          },
+          "serviceId": {
+            "description": "Replacement service for the booking.",
+            "example": "cmservice123",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateProfileDto": {
+        "properties": {
+          "name": {
+            "description": "User's display name",
+            "example": "Eric Customer",
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "VerifyEmailRequestDto": {
+        "properties": {
+          "token": {
+            "description": "Verification token sent to the user email",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "type": "object"
+      },
+      "VerifyEmailResponseDto": {
+        "properties": {
+          "accessToken": {
+            "description": "Access token",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          },
+          "message": {
+            "example": "User logged in successfully",
+            "type": "string"
+          },
+          "refreshMaxAgeSeconds": {
+            "description": "Refresh cookie lifetime the BFF should apply, in seconds.",
+            "example": 43200,
+            "type": "number"
+          },
+          "refreshToken": {
+            "description": "Refresh token. Intended for trusted server-side clients such as the Next.js BFF to set as an HttpOnly browser cookie.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "accessToken",
+          "refreshToken",
+          "refreshMaxAgeSeconds"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "cookie": {
+        "in": "cookie",
+        "name": "refreshToken",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "fahmidulhaque97@pm.me",
+      "name": "Fahmid Haque",
+      "url": "https://www.linkedin.com/in/fahmid-h-b7a96b123/"
+    },
+    "description": "Canonical HTTP contract for the Eric's Barbers web and mobile clients.",
+    "license": {
+      "name": "MIT",
+      "url": "https://mit-license.org/"
+    },
+    "title": "Eric's Barber API",
+    "version": "1.0"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": "Hello World!",
+                  "type": "string"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/auth/account": {
+      "delete": {
+        "operationId": "AuthController_deleteAccount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": "Account deleted successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/account-lookup": {
+      "post": {
+        "operationId": "AuthController_accountLookup",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountLookupDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountLookupResponseDto"
+                }
+              }
+            },
+            "description": "Account lookup completed"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LoginResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LoginMfaRequiredResponseDto"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "User logged in successfully"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": "User logged out successfully"
+          }
+        },
+        "security": [
+          {
+            "refreshToken": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/mfa-preference": {
+      "put": {
+        "operationId": "AuthController_updateMfaPreference",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaPreferenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": "MFA preference updated successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponseDto"
+                }
+              }
+            },
+            "description": "User profile retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      },
+      "put": {
+        "operationId": "AuthController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponseDto"
+                }
+              }
+            },
+            "description": "User profile updated successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refreshTokens",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshTokenResponseDto"
+                }
+              }
+            },
+            "description": "Access token refreshed successfully"
+          }
+        },
+        "security": [
+          {
+            "refreshToken": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": "User registered successfully"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": "Password reset successfully"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/reset-password-email": {
+      "post": {
+        "operationId": "AuthController_resetPasswordEmail",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordEmailDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": "Password reset link sent to email if it exists"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/send-verification-email": {
+      "post": {
+        "operationId": "AuthController_sendVerificationEmail",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendVerificationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": "Verification email sent successfully"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyEmailResponseDto"
+                }
+              }
+            },
+            "description": "Email verified successfully"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/verify-mfa": {
+      "post": {
+        "operationId": "AuthController_verifyMFA",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            },
+            "description": "MFA verified successfully"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/availability/slots": {
+      "get": {
+        "operationId": "AvailabilityController_getSlots",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "barberId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "example": "2026-07-06",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "serviceId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "List bookable slots for a barber and date",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/barbers": {
+      "get": {
+        "operationId": "BarbersController_getBarbers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BarberResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "List active barbers available for booking",
+        "tags": [
+          "Barbers"
+        ]
+      },
+      "post": {
+        "operationId": "BarbersController_createBarber",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBarberDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Barbers"
+        ]
+      }
+    },
+    "/barbers/{barberId}/availability/slots": {
+      "get": {
+        "operationId": "BarberAvailabilityController_getSlots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "barberId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "example": "2026-07-06",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "serviceId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "List bookable slots for one barber and date",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/barbers/{id}": {
+      "delete": {
+        "operationId": "BarbersController_deleteBarber",
+        "parameters": [
+          {
+            "description": "Barber ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "example": "dfsdfmk",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Barbers"
+        ]
+      },
+      "get": {
+        "operationId": "BarbersController_getBarberDetails",
+        "parameters": [
+          {
+            "description": "Barber ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "example": "dfsdfmk",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarberResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Barbers"
+        ]
+      },
+      "put": {
+        "operationId": "BarbersController_updateBarber",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBarberDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Barbers"
+        ]
+      }
+    },
+    "/booking": {
+      "get": {
+        "operationId": "BookingController_getBookings",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BookingDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List bookings accessible to the signed-in user",
+        "tags": [
+          "Booking"
+        ]
+      },
+      "post": {
+        "description": "The key identifies one submission intent for 24 hours. An identical retry in the same authenticated or guest-email scope replays the original 201 response. Reusing the key for different normalized booking details or scope returns 409 IDEMPOTENCY_KEY_REUSED.",
+        "operationId": "BookingController_createBooking",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": "The slot is unavailable, the key is still being processed, or the key was reused for different details. Stable idempotency codes are IDEMPOTENCY_REQUEST_IN_PROGRESS and IDEMPOTENCY_KEY_REUSED."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a confirmed guest or authenticated customer booking",
+        "tags": [
+          "Booking"
+        ]
+      }
+    },
+    "/booking/{id}": {
+      "get": {
+        "operationId": "BookingController_getBookingDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get an accessible booking by internal ID",
+        "tags": [
+          "Booking"
+        ]
+      },
+      "patch": {
+        "description": "Any combination of service, barber, and appointment time can change. Current service terms, eligibility, booking policy, and availability are revalidated.",
+        "operationId": "BookingController_updateBooking",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reschedule an accessible customer booking",
+        "tags": [
+          "Booking"
+        ]
+      }
+    },
+    "/booking/{id}/cancel": {
+      "patch": {
+        "operationId": "BookingController_cancelBooking",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel an accessible customer booking",
+        "tags": [
+          "Booking"
+        ]
+      }
+    },
+    "/booking/reference/{reference}": {
+      "patch": {
+        "description": "Any combination of service, barber, and appointment time can change. Current service terms, eligibility, booking policy, and availability are revalidated.",
+        "operationId": "BookingController_updateBookingByReference",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reference",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Reschedule a guest booking by secure reference",
+        "tags": [
+          "Booking"
+        ]
+      }
+    },
+    "/booking/reference/{reference}/cancel": {
+      "patch": {
+        "operationId": "BookingController_cancelBookingByReference",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reference",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingMutationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Cancel a guest booking by secure reference",
+        "tags": [
+          "Booking"
+        ]
+      }
+    },
+    "/booking/reference/lookup": {
+      "post": {
+        "operationId": "BookingController_getBookingByReference",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingReferenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingLookupResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Look up a guest booking using its secure reference",
+        "tags": [
+          "Booking"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "error": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {},
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "info": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "status": {
+                      "example": "ok",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Health Check is successful"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        },
+                        "redis": {
+                          "message": "Could not connect",
+                          "status": "down"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "error": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "redis": {
+                          "message": "Could not connect",
+                          "status": "down"
+                        }
+                      },
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "info": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "status": {
+                      "example": "error",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Health Check is not successful"
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/services": {
+      "get": {
+        "operationId": "ServicesController_getServices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "List active bookable services",
+        "tags": [
+          "Services"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Local development",
+      "url": "http://localhost:4000"
+    },
+    {
+      "description": "Production API",
+      "url": "https://erics-barber-api.onrender.com"
+    }
+  ],
+  "tags": []
+}
